@@ -1,0 +1,1301 @@
+---
+title: "Supplementary Information for Figure 4: The effects of HLA-DQ genetic background on VH:CrD and gene expression"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    theme: united
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+```{css, echo = FALSE}
+
+.carousel-control.left {
+  background-image: none;
+}
+
+.carousel-control.right {
+  background-image: none;
+}
+
+.carousel-indicators li {
+  border: 1px solid black;
+}
+
+.carousel-control .glyphicon {
+  color: black;
+}
+
+```
+
+------------------------------------------------------------------------
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Summary
+
+We assessed the impact of treatment on VH:CrD within different timepoints (GFD and PGC) across HLA-DQ genetic background groups (G1, G2, and G3) by fitting repeated measures ANOVA.
+
+In the placebo group, the interaction between timepoint and HLA-DQ genetic groups was statistically significant F(2,20) = 7.9, *P* = .003 ([2.3 Computation of Repeated measures ANOVA]), indicating that HLA-DQ genetic background has impact on VH:CrD in a certain timepoint. Indeed, the one-way model suggests that the simple main effect of HLA-DQ genetic groups was not significant at the GFDp time point (*P*.adj = 0.484), but it is significant at PGCp (*P*.adj = 0.042) ([2.4.1 Simple main effect of Genotype group]). Pairwise comparisons between timepoints for placebo group are presented [2.4.3 Simple pairwise comparisons.].
+
+The interaction term in the drug group was not significant (F (2,31) = 3.02, P = .06) ([2.3 Computation of Repeated measures ANOVA]). The main effect of time (GFDd vs. PGCd) on VH:CrD was statistically significant (*P* =.005) based on the comparison between these two groups consisting of 34 subjects each [2.4.2 Main effects for each of the two variables: Treatment and HLA_Genotype_Group]. The main effect of different genotype groups (G1, G2, and G3) on VH:CrD for at GFDd and PGCd time points was assessed by pairwise comparisons. These p-values suggest that the impact of HLA-DQ genetic background may be statistically significant for the G1 group (*P* = .047), but not significant for the G2 (*P* = .069) and G3 groups (*P* = .389) [2.4.3 Simple pairwise comparisons.].
+
+When examining the changes in mean VH:CrD within genotype groups over time ([2.4.4 Comparisons plot (Figure 4A).](#comparisons-plot-figure-4a.)), it is evident that the groups exhibit varying trajectories of change. Notably, the slope of the G1 group appears to deviate the most from the parallel pattern among the groups for both drug and placebo treatments.
+
+Given the notable drop in the VH:CrD after ZED1227 treatment in high gluten-response genotype group G1, we analyzed the efficacy of treatments in each genotype group. A two-way analysis of covariance (ANCOVA) statistical analysis was performed to examine the effects of treatment and HLA-DQ genetic background on VH:CrD at PGC. After adjustment for the VH:CrD at GFD, there was no statistically significant interaction between treatment and the HLA-DQ genotype group on the histomorphometry parameters (F (2,50) = 2.2, P = .12) [3.3 Computation of two-way ANCOVA]. Pairwise multiple comparisons show significant difference between the PGC VH:CrD means adjusted for GFD in all genotype groups between drug and placebo patients ([3.4.2. Pairwise comparisons plot]). This suggests that, although the G1 group patients had a significant VH:CrD decrease after gluten challenge in the drug group, the VH:CrD ratio was still significantly higher in the drug group compared to the placebo group, irrespective of the genotype.
+
+A one-way ANCOVA statistical analysis was performed to further examine the significantly weaker recovery of VH:CrD with ZED1227 in the genotype G1 group. The data showed that there was an effect of HLA-DQ genetic background on the VH:CrD value at PGCd adjusted for VH:CrD at GFDd values ( F(2, 30) = 5.11, P = .012) [4.3 Computation of one-way ANCOVA]. The estimated difference in the VH:CrD ratio for drug patients belonging to G3 genotypes versus G1 genotypes is -0.52 (95% CI -0.86 to -0.19) with P adj = .01. Other estimated differences (G3-G2 and G2-G1) were not significant but showed the tendency of group G2 having the intermediate position between G1 and G3, when judging by the VH:CrD value ([4.4.2. Pairwise comparisons plot](#pairwise-comparisons-plot-1)).
+
+Interestingly, the G1 high-risk genotype specifically affected the villous height ([6.4.2. Pairwise comparisons plot](#pairwise-comparisons-plot-3)) and not crypt depth ([7.4.2. Pairwise comparisons plot](#pairwise-comparisons-plot-4)).
+
+The CeD pathophysiological epithelial IFN-γ response was again studied with a two-way ANCOVA statistical analysis F (2,49) = 0,071, *P* = .93 [5.3 Computation of two-way ANCOVA](#computation-of-two-way-ancova-1) , and pairwise comparisons showed that PGCd patients in the G1 genotype group still had IFN-γ response active and did not statistically differ from the placebo group ([5.4.3. Pairwise comparisons plot](#pairwise-comparisons-plot-2)).
+
+------------------------------------------------------------------------
+
+## 1. Data used in Figure 4 and Supplemental figure S6
+
+Data used in figure 4 and supplemental figure S6. VH:Crd - villus height to crypt depth ratio
+
+```{r 1, echo=F, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+library(rstatix)
+library(DESeq2)
+library(emmeans)
+library(ggpubr)
+library(data.table)
+library(cowplot)
+library(numform)
+library(ggplotify)
+library(ggthemes)
+library(readxl)
+library(lazyWeave)
+library(gridExtra)
+#library("kableExtra")
+library(DT)
+
+#setwd("C:/Users/mevado/OneDrive - TUNI.fi/ISE/RNA seq CD new project/our data")
+#setwd("D:/OneDrive/OneDrive - TUNI.fi/ISE/RNA seq CD new project/our data")
+
+#create theme for all plots
+mytheme <- theme_classic(base_family='sans') + theme(axis.text.x = element_text(size=6, color = "black"),
+                                                     axis.text.y= element_text(size=6, color = "black"),
+                                                     axis.title.y = element_text(size=7, color = "black"),
+                                                     axis.title.x = element_text(size=7, color = "black"),
+                                                     legend.text = element_text( size = 5, color = "black"),
+                                                     legend.key.size = unit(5, 'mm'),
+                                                     legend.position = "top",
+                                                     legend.title = element_blank(),
+                                                     plot.title = element_text(hjust = 0.5, size = 7,face = "bold"),
+                                                     axis.line = element_line(colour = "black", size=1/.pt))
+palette3 <- c("#404040","#a0b6f7","#f2f261")
+
+metadata <- read_xlsx(path = "./input_data/metadata-comb.xlsx")
+IFNg_GSZ <- read_xlsx("./input_data/epithelial_IFNg_responce_CeD_GSZ.xlsx")
+colnames(IFNg_GSZ)[3] <- "epithelial_IFNg_responce"
+
+metadata <- merge(metadata, IFNg_GSZ[, c(1,3)], by.x = "ID", by.y = "Samples", all =T)
+metadata <- metadata %>%  arrange(newID) %>%
+  mutate_at(c("epithelial_IFNg_responce", "CrD","VH","VHCrD"), as.numeric) %>% 
+  mutate_at(c("epithelial_IFNg_responce", "CrD","VH","VHCrD"), round, 2)
+colnames(metadata)[which(names(metadata) %in% c("Pair","Treatment","label",'HLA_Genotype_Group', "CrD","VH","VHCrD","epithelial_IFNg_responce"))] <- c('Patient_ID','treatment', "timepoint",'HLA_Genotype_Group',"CrD","VH","VHCrD", "epithelial_IFNg_responce")
+
+#head(metadata[,c('Patient_ID','treatment', "timepoint",'HLA_Genotype_Group',"CrD","VH","VHCrD", "epithelial_IFNg_responce")])
+datatable(metadata[,c('Patient_ID','treatment', "timepoint",'HLA_Genotype_Group',"CrD","VH","VHCrD", "epithelial_IFNg_responce")],
+  caption = 'Table.1 Data used in Figure 4 and Supplemental figure S6')
+#metadata_wide[, c(2:6)]
+```
+
+## 2. Repeated measures ANOVA (figure 4A)
+
+The objective is to determine whether belonging to a specific HLA-DQ genotype group leads to a significant decrease in VH:CrD over time during gluten challenge. In essence, the aim is to identify if there is a interaction between HLA-DQ genotype group and Timepoint concerning VH:CrD.
+
+### 2.1 Summary statistics
+
+One patient from placebo group, failed during identification of HLA-DQ genotype. This patient is marked as "not identified" in Table below and was excluded from subsequent analysis.
+
+```{r 2.1, echo=F, message=FALSE, warning=FALSE}
+sumstat <- metadata %>%
+  group_by(treatment, `HLA_Genotype_Group`, timepoint) %>%
+  get_summary_stats(`VHCrD`, type = "mean_sd")
+sumstat %>% 
+  mutate_if(is.numeric, round, 2)
+#datatable(sumstat,colnames = c('Treatment','Timepoint', 'Genotype group', 'Variable', 'N','mean', "sd"),
+#  caption = 'Table 3: Summary of changes in VH:CrD values from baseline GFD according to HLA-DQ2/HLA-DQ8 genotypes.')
+
+```
+
+### 2.2 Assumptions check
+
+#### 2.2.1 Normality assumption
+
+```{r 2.2.1, echo=F, message=FALSE, warning=FALSE}
+metadata <- metadata[metadata$`HLA_Genotype_Group` != "Not identified",]
+#1.The dependent variable must be a continuous quantitative variable and have a normal distribution
+#Create the histogram plot
+phist <- gghistogram(
+  metadata, x = "VHCrD", 
+  add = "mean", rug = TRUE,
+  fill = "label2", palette = c("#00b347","#0078d4","#6500ff","#ff6500"),facet.by  = c("timepoint", "treatment"),
+) +mytheme +xlab("VH:CrD")
+
+pdensity <- ggdensity(
+  metadata, x = "VHCrD",  
+  color= "label2", palette = c("#00b347","#0078d4","#6500ff","#ff6500"),facet.by  = c("timepoint", "treatment"),
+  alpha = 0
+) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), position = "right")  +
+  theme_half_open(11, rel_small = 1) +
+  rremove("x.axis")+
+  rremove("xlab") +
+  rremove("x.text") +
+  rremove("x.ticks") +
+  rremove("legend") + theme(axis.title.y = element_text(size=7, color = "black"),axis.text.y= element_text(size=6, color = "black"))
+
+aligned_plots <- align_plots(phist, pdensity, align="hv", axis="tblr")
+hist <- ggdraw(aligned_plots[[1]]) + draw_plot(aligned_plots[[2]])
+hist
+```
+
+```{r 2.2.1QQ, echo=F, message=FALSE, warning=FALSE}
+#QQplot
+qqpl <- ggqqplot(metadata, x = "VHCrD", color = "label2", palette = c("#00b347","#0078d4","#6500ff","#ff6500"),facet.by  = c("timepoint", "treatment")) +    mytheme
+qqpl
+```
+
+From the plots above, as all the points fall approximately along the reference line, we can assume normality.
+
+#### 2.2.2 Outliers check
+
+```{r 2.2.2, echo=F, message=FALSE, warning=FALSE}
+
+out <- metadata%>%
+  group_by(treatment, label2) %>%
+  identify_outliers(VHCrD)
+out[, c("Patient_ID","treatment","timepoint", "HLA_Genotype_Group","VHCrD", "is.outlier", "is.extreme" )]
+```
+
+There were no extreme outliers in our data set.
+
+### 2.3 Computation of Repeated measures ANOVA
+
+Repeated measures ANOVA was employed to assess the impact of treatment on VH:CrD within different timepoints (GFD and PGC) across HLA-DQ genetic background groups (G1, G2, and G3). This analysis comprised 57 patients with identifiable HLA-DQ genotypes. Model included "VH:CrD" as dependent variable, "Genotype group" as between-subject factor variables, "timepoint" as within-subjects factor variables and "Patient ID" as individuals identifier.
+
+```{r 2.3, echo=F, message=FALSE, warning=FALSE}
+metadata <- metadata %>%
+  convert_as_factor(newID,`Patient_ID`,treatment,timepoint)
+
+res.aov <- metadata %>%  group_by(treatment) %>%
+  anova_test(dv = VHCrD, wid = newID, within = c(timepoint), between = c(HLA_Genotype_Group))
+
+get_anova_table(res.aov)
+
+```
+
+The results show the effects of treatment, timepoint, and the interaction between HLA-DQ genetic groups and timepoint for both the drug and placebo groups, along with corresponding degrees of freedom (DFn and DFd), F-values, p-values, significance indicators (\*), and effect sizes (ges).
+
+The impact of treatment on VH:CrD at different timepoints (GFD and PGC) was evaluated across HLA-DQ genetic background groups (G1, G2, and G3) using repeated measures ANOVA. In the placebo group, the interaction between timepoint and HLA-DQ genetic groups was statistically significant `r paste0("F(", res.aov$DFn[6],",", res.aov$DFd[6], ") = ", round(res.aov$F[6],1), ", P = ", res.aov$p[6])`.
+
+### 2.4 Post-hoc tests
+
+A significant two-way interaction indicates that the impact that one factor (e.g., HLA_Genotype_Group) has on the outcome variable (e.g., timepoint) depends on the level of the other factor (e.g., timepoint). So, we decompose a significant two-way interaction into:
+
+#### 2.4.1 Simple main effect of Genotype group
+
+Simple main effect of Genotype group on timepoint calculated for ***placebo group***.
+
+```{r 2.4.1, echo=F, message=FALSE, warning=FALSE}
+# Effect of Haplotype_G4 at each time point in placebo group
+one.way <- metadata[metadata$HLA_Genotype_Group != "Not identified" & metadata$treatment == "placebo",] %>%
+  group_by(timepoint) %>%
+  anova_test(dv = VHCrD, wid = newID, between = HLA_Genotype_Group) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way
+
+```
+
+Considering the Bonferroni adjusted p-value (p.adj), it can be seen that the simple main effect of HLA_Genotype_Group was not significant at the timepoint GFD (`r paste0("p.adj = ", one.way[one.way$timepoint=="GFD",]$p.adj)`). It becomes significant at PGC (`r paste0("p.adj = ", one.way[one.way$timepoint=="PGC",]$p.adj)`).
+
+#### 2.4.2 Main effects for each of the two variables: Treatment and HLA_Genotype_Group
+
+For ***drug group*** the interaction is not significant `r paste0("F(", res.aov$DFn[3],",", res.aov$DFd[3], ") = ", round(res.aov$F[3],1), ", P = ", res.aov$p[3])`, we interpret the main effects for significant timepoint. A significant main effect is followed by pairwise comparisons.
+
+```{r 2.4.2, echo=F, message=FALSE, warning=FALSE}
+#DRUG non-significant two-way interaction
+# comparisons for Timepoint variable
+ptt <- metadata[metadata$HLA_Genotype_Group != "Not identified" & metadata$treatment == "drug",] %>%
+  pairwise_t_test(
+    VHCrD ~ timepoint, paired = TRUE, 
+    p.adjust.method = "bonferroni"
+  )
+ptt
+```
+
+The main effect of time (GFDd vs. PGCd) on VH:CrD was statistically significant (`r paste0("P = ",ptt$p)`) based on the comparison between these two groups consisting of 34 subjects each.
+
+#### 2.4.3 Simple pairwise comparisons.
+
+Multiple pairwise comparisons were performed to determine which groups are different.
+
+```{r 2.4.3 pairwise post-hoc, echo=F, message=FALSE, warning=FALSE}
+metadata <- metadata %>% arrange(newID)
+pwc <- metadata[metadata$HLA_Genotype_Group != "Not identified",] %>%
+  group_by(HLA_Genotype_Group, treatment) %>%
+  pairwise_t_test(
+    VHCrD ~ timepoint, paired = TRUE,
+    p.adjust.method = "bonferroni"
+  )
+#pwc%>% arrange(treatment)
+pwc %>% arrange(treatment) %>% select("treatment","HLA_Genotype_Group","group1","group2",  "statistic","df","p")
+```
+
+The main effect of different genotype groups (G1, G2, and G3) on VH:CrD for at GFDd and PGCd time points was assessed by pairwise comparisons. These p-values suggest that the impact of HLA-DQ genetic background may be statistically significant for the G1 group (`r paste0("P = ",pwc[pwc$treatment == "drug" & pwc$HLA_Genotype_Group =="G1",]$p)`), but not significant for the G2 (`r paste0("P = ",pwc[pwc$treatment == "drug" & pwc$HLA_Genotype_Group =="G2",]$p)`) and G3 groups (`r paste0("P = ",pwc[pwc$treatment == "drug" & pwc$HLA_Genotype_Group =="G3",]$p)`).
+
+#### 2.4.4 Comparisons plot (Figure 4A). {#comparisons-plot-figure-4a.}
+
+```{r 2.4.4 plot, echo=F, message=FALSE, warning=FALSE}
+means <- metadata[metadata$HLA_Genotype_Group != "Not identified",]%>%
+  group_by(treatment, HLA_Genotype_Group,timepoint) %>%
+  get_summary_stats(VHCrD, type = "mean_sd")
+
+
+A <- ggplot(means, aes(x = timepoint, y = mean, color = HLA_Genotype_Group))+
+  geom_point(size=1)+
+  geom_line(aes(x = timepoint, y = mean, group  = HLA_Genotype_Group), linewidth = 0.2)+
+  facet_wrap("treatment")+
+  geom_errorbar(aes(ymin = mean-sd, ymax = mean+sd, color = HLA_Genotype_Group), 
+                width = 0.05, linewidth = 0.05)+
+  scale_colour_manual(values = palette3)+
+  ylab("VH:CrD")+ mytheme+
+  theme(legend.position="top",
+        legend.title=element_blank(),
+        axis.title.x =element_blank())
+A
+```
+
+VH:CrD ratio remains higher in the drug group compared to the placebo group, regardless of the genotype. Subjects (n = `r sum(means$n)/2`) were divided into two groups according to the treatment received (drug or placebo). 
+
+## 3. Two-way ANCOVA (figure 4B)
+
+Given the notable drop in the VH:CrD after ZED1227 treatment in high gluten-response genotype group G1, we analyzed the efficacy of treatments in each genotype group. A two-way analysis of covariance (ANCOVA) statistical analysis was performed to examine the effects of treatment and HLA-DQ genetic background on VH:CrD at PGC.
+
+To assess the interaction between treatment groups and HLA-DQ genetic backgrounds on VH:CrD at PGC, a two-way ANCOVA was conducted using VH:CrD at PGC as the dependent variable, HLA-DQ genetic background (G1, G2, and G3 genotype groups) and treatment (placebo or drug) as independent variables, and baseline VH:CrD (from GFD group) as a covariate. This analysis included 57 patients, with one subject from the placebo group excluded due to unidentified allele type. The study formulated two null hypotheses for the two-way ANCOVA analysis: 1) no VH:CrD difference at PCG exists between treatment groups (placebo and drug), while accounting for VH:CrD at GFD, and 2) no VH:CrD differences at PCG exist across HLA-DQ genetic backgrounds (G1, G2, and G3 genotype groups), controlling for VH:CrD at GFD.
+
+### 3.1 Summary statistics
+
+```{r 3.1, echo=F, message=FALSE, warning=FALSE}
+sumstat <- metadata %>%
+  group_by(treatment, `HLA_Genotype_Group`, timepoint) %>%
+  get_summary_stats(`VHCrD`, type = "mean_sd")
+sumstat %>% 
+  mutate_if(is.numeric, round, 2)
+#datatable(sumstat,colnames = c('Treatment','Timepoint', 'Genotype group', 'Variable', 'N','mean', "sd"),
+#  caption = 'Table 3: Summary of changes in VH:CrD values from baseline GFD according to HLA-DQ2/HLA-DQ8 genotypes.')
+
+```
+
+### 3.2 Assumptions check
+
+#### 3.2.1 Normality assumption
+
+```{r 3.2.1, echo=F, message=FALSE, warning=FALSE}
+metadata <- metadata[metadata$`HLA_Genotype_Group` != "Not identified",]
+#1.The dependent variable must be a continuous quantitative variable and have a normal distribution
+#Create the histogram plot
+phist <- gghistogram(
+  metadata[metadata$timepoint == "PGC",], x = "VHCrD", 
+  add = "mean", rug = TRUE,
+  fill = "label2", palette = c("#6500ff","#ff6500"),facet.by  = c("treatment")
+) +mytheme +xlab("VH:CrD")
+
+pdensity <- ggdensity(
+  metadata[metadata$timepoint == "PGC",], x = "VHCrD",  
+  color= "label2", palette = c("#6500ff","#ff6500"),facet.by  = c( "treatment"),
+  alpha = 0
+) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), position = "right")  +
+  theme_half_open(11, rel_small = 1) +
+  rremove("x.axis")+
+  rremove("xlab") +
+  rremove("x.text") +
+  rremove("x.ticks") +
+  rremove("legend") + theme(axis.title.y = element_text(size=7, color = "black"),axis.text.y= element_text(size=6, color = "black"))
+
+aligned_plots <- align_plots(phist, pdensity, align="hv", axis="tblr")
+hist <- ggdraw(aligned_plots[[1]]) + draw_plot(aligned_plots[[2]])
+hist
+```
+
+```{r 3.2.1 QQ, echo=F, message=FALSE, warning=FALSE}
+#QQplot
+qqpl <- ggqqplot(metadata[metadata$timepoint == "PGC",], x = "VHCrD",
+                 color = "label2", palette = c("#6500ff","#ff6500")) + mytheme
+qqpl
+```
+
+From the plot above, as all the points fall approximately along the reference line, we can assume normality.
+
+#### 3.2.2 Linear relationship between the dependent variable and covariate.
+
+```{r 3.2.2, echo=F, message=FALSE, warning=FALSE}
+metadata_wide <- reshape2::dcast(as.data.frame(metadata[,c("treatment","HLA_Genotype_Group","VHCrD","timepoint", "newID")]), newID + HLA_Genotype_Group +treatment ~ timepoint, value.var = "VHCrD")
+
+plot1 <- ggscatter(metadata_wide, x = "GFD", y = "PGC",
+                   facet.by  = c("HLA_Genotype_Group", "treatment"), 
+                   short.panel.labs = FALSE, add = "reg.line",   conf.int = T) + mytheme
+#stat_smooth(method = "loess", span = 0.9)
+plot1
+
+```
+
+There was a linear relationship between the covariate (VH:CrD at GFD) and the outcome variable (VH:CrD at PGC) for each group, as assessed by visual inspection of a scatter plot.
+
+#### 3.2.3 Homogeneity of regression slopes.
+
+```{r 3.2.3, echo=F, message=FALSE, warning=FALSE}
+#3. Homogeneity of regression slopes
+df <- metadata_wide %>%
+  anova_test(
+    PGC ~  GFD + treatment + HLA_Genotype_Group + 
+      treatment*HLA_Genotype_Group + GFD*treatment +
+      GFD*HLA_Genotype_Group + GFD*HLA_Genotype_Group*treatment
+  )
+#myt <- ttheme_default(base_size = 6, base_colour = "black", base_family = "",parse = T)
+#tb <- tableGrob(df, rows = NULL,theme=myt)
+#as.ggplot(tb)
+df
+```
+
+There was homogeneity of regression slopes as the interaction terms, between the covariate "GFD" (VH:CrD at GFD) and grouping variables (treatment and Genotype group), was not statistically significant, `r paste0("P = ", df$p[7])`.
+
+#### 3.2.4 Normality of residuals.
+
+```{r 3.2.4, echo=F, message=FALSE, warning=FALSE}
+#4. Normality of residuals
+# Fit the model, the covariate goes first
+model <- lm(PGC ~  GFD + treatment*HLA_Genotype_Group, data = metadata_wide)
+# Inspect the model diagnostic metrics
+model.metrics <- augment(model) %>%
+  select(-.hat, -.sigma, -.fitted) # Remove details
+#head(model.metrics, 5)
+# Assess normality of residuals using shapiro wilk test
+#shapiro_test(model.metrics$.resid)
+qqpl2 <- ggqqplot(model.metrics, x = ".resid") + 
+  annotate("text", x = -1, y = 1, label = "model formula: PGC ~ GFD + treatment * HLA_Genotype_Group", color = "black", parse = F)+ 
+  annotate("text", x = -1, y = 0.7, label = paste0("Shapiro Wilk test p-value: ", round(shapiro_test(model.metrics$.resid)$p.value,2)), color = "black", parse = F)+ 
+  mytheme 
+qqpl2
+```
+
+The Shapiro Wilk test was not significant `r paste0("P = ", round(shapiro_test(model.metrics$.resid)$p.value,2))`, so we can assume normality of residuals
+
+#### 3.2.5 Homogeneity of variances
+
+```{r 3.2.5, echo=F, message=FALSE, warning=FALSE}
+lt <- levene_test(.resid ~ treatment*HLA_Genotype_Group, data = model.metrics)
+lt
+```
+
+The Levene's test was not significant (`r paste0("P = ", round(lt$p,2))`), so we can assume homogeneity of the residual variances for all groups.
+
+### 3.3 Computation of two-way ANCOVA
+
+```{r 3.3 2wANCOVA, echo=F, message=FALSE, warning=FALSE}
+res.aov <- metadata_wide %>% anova_test(PGC ~ GFD + treatment*HLA_Genotype_Group)
+get_anova_table(res.aov)
+#get_test_label(res.aov,  detailed = TRUE)
+#r paste0(get_test_label(res.aov,  detailed = T))
+```
+
+After adjustment for the VH:CrD at GFD, there was no statistically significant interaction between treatment and the HLA-DQ genotype group on the histomorphometry parameters `r paste0("F(", res.aov$DFn[4],",", res.aov$DFd[4], ") = ", round(res.aov$F[4],1), ", P = ", res.aov$p[4])`.
+
+### 3.4 Post-hoc tests
+
+#### 3.4.1. Pairwise comparisons
+
+```{r 3.4 2wANCOVA, echo=F, message=FALSE, warning=FALSE}
+pwc1 <- metadata_wide %>% 
+  group_by(HLA_Genotype_Group) %>%
+  emmeans_test(  #Performs pairwise comparisons between groups using the estimated marginal means
+    PGC ~ treatment, covariate = GFD,
+    p.adjust.method = "bonferroni"
+  )
+#pwc1 %>% filter(p.adj < 0.05)
+pwc1
+#There was a statistically significant difference between the adjusted for GFD VH:CrD at PGC mean of drug and placebo group for all genotype groups.
+```
+There was a statistically significant difference between the adjusted for GFD VH:CrD at PGC mean of drug and placebo group for all genotype groups.
+
+
+#### 3.4.2. Pairwise comparisons plot
+
+Post-hoc pairwise multiple comparisons using estimated marginal means calculation (EMMs, also known as least-squares means) were conducted between the drug and placebo groups for the two-way ANCOVA. To address multiple testing, the Bonferroni correction was applied to P-values, `r paste0("total tests performed = ", unique(pwc1$p.adj/pwc1$p))`. Statistical significance was defined as a P value adjusted \< .05.
+
+```{r 3.4.2, echo=F, message=FALSE, warning=FALSE}
+#`r paste0("total tests performed = ", unique(pwc1$p.adj/pwc1$p))`
+
+# Line plot
+i = "VH:CrD"
+lp <- ggscatter(#ggline(
+  get_emmeans(pwc1), x = "HLA_Genotype_Group", y = "emmean", 
+  color = "treatment", palette = c("#6500ff","#ff6500")) +
+  geom_errorbar(
+    aes(ymin = conf.low, ymax = conf.high, color = treatment), 
+    width = 0.05
+  )+
+  xlab("HLA-DQ genotype group") +
+  ylab(paste(i, "at PGC \n estimated marginal means", sep=" "))+
+  theme(legend.position="top",
+        legend.title=element_blank())+ mytheme
+
+#lp
+
+# Comparisons between treatment group at each exercise level
+pwc1 <- pwc1 %>% rstatix::add_xy_position(x = "HLA_Genotype_Group", fun="mean_sd")
+#pwc1$y.position <- 2*seq(from=1, to=1.3, length.out=nrow(pwc1))
+pwc1.filtered <- pwc1 %>% filter(p.adj < 0.05)
+
+library(numform)
+pwc1.filtered %>% 
+  mutate(p_new = ifelse(p.adj > 0.01, c(paste("italic('P')~`=", f_num(p.adj,2), "`")), p.adj))%>% 
+  mutate(p_new = ifelse(p.adj < 0.01, c(paste("italic('P')~`=", f_num(p.adj,3), "`")), p_new)) %>%
+  mutate(p_new = ifelse(p.adj < 0.001, c(paste("italic('P')~`", "<.001", "`")),p_new))->pwc1.filtered
+
+
+B <- lp + 
+  geom_signif(data=pwc1.filtered,
+              aes(xmin=xmin, xmax=xmax, annotations=p_new, y_position=y.position),
+              textsize = 6/.pt, 
+              manual=TRUE, 
+              parse=T, size=0.3, tip_length = 0) +  labs(
+    subtitle = get_test_label(res.aov,  detailed = TRUE),
+    caption = get_pwc_label(pwc1)
+  )
+B 
+```
+
+A two-way ANCOVA was performed with VH:CrD at PGC as a dependent variable and VH:CrD at GFD as covariate and Treatment (drug, placebo) and HLA-DQ genotype group (G1, G2, G3) as independent variables. ANCOVA, F (2,50) = 2.2, p = .12. Post-hoc pairwise multiple comparisons were performed between drug and placebo group among HLA-DQ genotype groups. VH:CrD ratio at PGC is shown as estimated marginal means±95% CI.
+
+## 4. One-way ANCOVA (figure 4C)
+
+For the one-way ANCOVA, only patients in the ***drug group*** (n = 34) were selected. The null hypothesis for this analysis was that there is no significant effect of HLA-DQ genetic background (represented by HLA-DQ genotype groups) on VH:CrD within the PGCd group, while adjusting for VH:CrD at GFDd. The one-way ANCOVA regression model included VH:CrD at PGCd as the dependent variable, VH:CrD at GFDd as a covariate, and HLA-DQ genotype group (G1, G2, G3) as independent variables.
+
+### 4.1 Summary statistics
+
+```{r 4.1, echo=F, message=FALSE, warning=FALSE}
+sumstat <- metadata %>% filter(treatment == "drug") %>% 
+  group_by(HLA_Genotype_Group, timepoint) %>%
+  get_summary_stats(`VHCrD`, type = "mean_sd")
+sumstat %>% 
+  mutate_if(is.numeric, round, 2)
+#datatable(sumstat,colnames = c('Treatment','Timepoint', 'Genotype group', 'Variable', 'N','mean', "sd"),
+#  caption = 'Table 3: Summary of changes in VH:CrD values from baseline GFD according to HLA-DQ2/HLA-DQ8 genotypes.')
+
+```
+
+### 4.2 Assumptions check
+
+#### 4.2.1 Normality assumption
+
+```{r 4.2.1, echo=F, message=FALSE, warning=FALSE}
+metadata_wide1 <- metadata_wide[metadata_wide$HLA_Genotype_Group != "Not identified" & metadata_wide$treatment == "drug", ]
+
+#1.The dependent variable must be a continuous quantitative variable and have a normal distribution
+#Create the histogram plot
+phist <- gghistogram(
+  metadata[metadata$timepoint == "PGC" & metadata$treatment == "drug",], x = "VHCrD", 
+  add = "mean", rug = TRUE,
+  fill = "label2", palette = c("#6500ff")
+) +mytheme +xlab("VH:CrD")
+
+pdensity <- ggdensity(
+  metadata[metadata$timepoint == "PGC" & metadata$treatment == "drug",], x = "VHCrD", 
+  color= "label2", palette = c("#6500ff"),
+  alpha = 0
+) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), position = "right")  +
+  theme_half_open(11, rel_small = 1) +
+  rremove("x.axis")+
+  rremove("xlab") +
+  rremove("x.text") +
+  rremove("x.ticks") +
+  rremove("legend") + theme(axis.title.y = element_text(size=7, color = "black"),axis.text.y= element_text(size=6, color = "black"))
+
+aligned_plots <- align_plots(phist, pdensity, align="hv", axis="tblr")
+hist <- ggdraw(aligned_plots[[1]]) + draw_plot(aligned_plots[[2]])
+hist
+
+```
+
+Histogram
+
+```{r 4.2.1QQ, echo=F, message=FALSE, warning=FALSE}
+#QQplot
+qqpl <- ggqqplot( metadata[metadata$timepoint == "PGC" & metadata$treatment == "drug",], x = "VHCrD",
+                 color = "label2", palette = c("#6500ff")) + mytheme
+qqpl
+```
+
+Q-Q plot
+
+From the plot above, as all the points fall approximately along the reference line, we can assume normality.
+
+#### 4.2.2 Linear relationship between the dependent variable and covariate.
+
+```{r 4.2.2, echo=F, message=FALSE, warning=FALSE}
+plot1 <- ggscatter(metadata_wide1, x = "GFD", y = "PGC",
+                   facet.by  = c("HLA_Genotype_Group"), 
+                   short.panel.labs = FALSE, add = "reg.line",   conf.int = T) + mytheme
+#stat_smooth(method = "loess", span = 0.9)
+plot1
+
+```
+
+There was a linear relationship between the covariate (VH:CrD at GFD) and the outcome variable (VH:CrD at PGC) for each Genotype group, as assessed by visual inspection of a scatter plot.
+
+#### 4.2.3 Homogeneity of regression slopes.
+
+```{r 4.2.3, echo=F, message=FALSE, warning=FALSE}
+#3. Homogeneity of regression slopes
+df <- metadata_wide1 %>%
+  anova_test(
+    PGC ~  GFD + HLA_Genotype_Group + 
+          GFD*HLA_Genotype_Group 
+  )
+
+df
+```
+
+There was homogeneity of regression slopes as the interaction terms, between the covariate "GFD" (VH:CrD at GFD) and grouping variable Genotype group, was not statistically significant, `r paste0("P = ", df$p[3])`.
+
+#### 4.2.4 Normality of residuals.
+
+```{r 4.2.4, echo=F, message=FALSE, warning=FALSE}
+#4. Normality of residuals
+# Fit the model, the covariate goes first
+model <- lm(PGC ~  GFD + HLA_Genotype_Group, data = metadata_wide1)
+# Inspect the model diagnostic metrics
+model.metrics <- augment(model) %>%
+  select(-.hat, -.sigma, -.fitted) # Remove details
+#head(model.metrics, 5)
+# Assess normality of residuals using shapiro wilk test
+#shapiro_test(model.metrics$.resid)
+qqpl2 <- ggqqplot(model.metrics, x = ".resid") + 
+  annotate("text", x = -1, y = 1, label = "model formula: PGC ~  GFD + HLA_Genotype_Group", color = "black", parse = F)+ 
+  annotate("text", x = -1, y = 0.7, label = paste0("Shapiro Wilk test p-value: ", round(shapiro_test(model.metrics$.resid)$p.value,2)), color = "black", parse = F)+ 
+  mytheme 
+qqpl2
+```
+
+The Shapiro Wilk test was not significant `r paste0("P = ", round(shapiro_test(model.metrics$.resid)$p.value,2))`, so we can assume normality of residuals
+
+#### 4.2.5 Homogeneity of variances
+
+```{r 4.2.5, echo=F, message=FALSE, warning=FALSE}
+lt <- levene_test(.resid ~ HLA_Genotype_Group, data = model.metrics)
+lt
+```
+
+The Levene's test was not significant `r paste0("P = ", round(lt$p,2))`, so we can assume homogeneity of the residual variances for all groups.
+
+### 4.3 Computation of one-way ANCOVA
+
+```{r 4.3, echo=F, message=FALSE, warning=FALSE}
+res.aov2 <- metadata_wide1 %>% anova_test(PGC ~ GFD+HLA_Genotype_Group)
+get_anova_table(res.aov2)
+#get_test_label(res.aov2,  detailed = TRUE)
+#`r get_test_label(res.aov2,  detailed = T)`
+
+```
+
+After adjustment for VH:CrD at GFD, there was a statistically significant difference in VH:CrD at PGC between the Genotype groups, `r paste0("F(", res.aov2$DFn[2],",", res.aov2$DFd[2], ") = ", round(res.aov2$F[2],1), ", P = ", res.aov2$p[2])`.
+
+### 4.4 Post-hoc tests
+
+#### 4.4.1. Pairwise comparisons
+
+Pairwise comparisons were performed to identify which groups are different. Post-hoc pairwise multiple comparisons using estimated marginal means calculation (EMMs, also known as least-squares meansor adjusted means) between HLA-DQ genotype groups for the one-way ANCOVA. To address multiple testing, the Bonferroni correction was applied to P-values, `r paste0("total tests performed = ", unique(pwc1$p.adj/pwc1$p))` . Statistical significance was defined as a P value adjusted \< .05.
+
+```{r 4.4.1, echo=F, message=FALSE, warning=FALSE}
+#`r paste0("total tests performed = ", unique(pwc1$p.adj/pwc1$p))`
+
+# Pairwise comparisons
+pwc2 <- metadata_wide1 %>% 
+  emmeans_test(  #Performs pairwise comparisons between groups using the estimated marginal means
+    PGC ~ HLA_Genotype_Group, covariate = GFD,
+    p.adjust.method = "bonferroni", detailed = F
+  )
+#pwc2 %>% filter(p.adj < 0.05)
+pwc2
+```
+
+#### 4.4.2. Pairwise comparisons plot {#pairwise-comparisons-plot-1}
+
+```{r 4.4.2, echo=F, message=FALSE, warning=FALSE}
+gg <- ggplot(metadata_wide1, aes(x = GFD,  y = PGC,color = HLA_Genotype_Group)) +
+  geom_point(aes(color=HLA_Genotype_Group), size=0.5) +
+  geom_smooth(method = "lm",  mapping = aes(y = predict(lm(PGC ~ GFD + HLA_Genotype_Group,data = metadata_wide1), metadata_wide1)), linewidth=0.5) +
+  scale_color_manual(values = palette3) +
+  ylab("VH:CrD in PGCd group") +
+  xlab("VH:CrD in GFDd group") +  mytheme +
+  theme(legend.position = "right") +
+  guides(color=guide_legend(override.aes=list(fill=NA))) #removes legend grey background
+#gg
+
+# Pairwise comparisons
+pwc2 <- metadata_wide1 %>% 
+  emmeans_test(  #Performs pairwise comparisons between groups using the estimated marginal means
+    PGC ~ HLA_Genotype_Group, covariate = GFD,
+    p.adjust.method = "bonferroni", detailed = T
+  )
+#pwc2 %>% filter(p.adj < 0.05)
+pwc2 %>%
+  select("group1","group2","estimate","se","conf.low","conf.high","p","p.adj")
+
+pwc2 %>% 
+  mutate(p_new = ifelse(p.adj > 0.01, c(paste("italic('P')~`=", f_num(p.adj,2), "`")), p.adj))%>% 
+  mutate(p_new = ifelse(p.adj < 0.01, c(paste("italic('P')~`=", f_num(p.adj,3), "`")), p_new)) %>%
+  mutate(p_new = ifelse(p.adj < 0.001, c(paste("italic('P')~`", "<.001", "`")),p_new))->pwc2
+pwc2$contrast <- paste0(pwc2$group1, " - ", pwc2$group2)
+
+
+gg_effect <- ggplot(data = pwc2, aes(y = contrast,estimate)) +
+                    geom_errorbar(aes(xmin = conf.low, xmax = conf.high),width = 0, color = "black") + # confidence level of effect
+                    geom_point(size = 0.5) + # estimate of effect
+  geom_vline(xintercept = 0, linetype = 2) + # draw a line at effect = 0
+   annotate(geom = "text", label = pwc2$p_new, size = 5/.pt, manual=TRUE, parse=T, y = 1:3, x = round(max(pwc2$conf.high)*4,2)) + # p-value. The y coordinates are set by eye
+  ylab("Contrast") +
+  coord_cartesian(xlim = c(round(min(pwc2$conf.low)*1.05,2),round(max(pwc2$conf.high)*5,2))) +
+  scale_x_continuous(position="top") +
+  theme_pubr() + mytheme + theme(axis.title.y = element_blank())
+
+#gg_effect
+
+Cp <- plot_grid(gg_effect,
+                gg ,
+                nrow=2,
+                align = "v",
+                axis = "rl",
+                rel_heights = c(0.4, 1)
+)
+Cp
+```
+
+The estimated difference in the VH:CrD ratio for drug patients belonging to G3 genotypes versus G1 genotypes is `r paste0( round( pwc2$estimate[2], 2), " (95% CI ", round( pwc2$conf.low[2], 2), " to ",round( pwc2$conf.high[2], 2), "), P.adj = ", round(pwc2$p.adj[2], 2))`.
+
+Other estimated differences (G3-G2 and G2-G1) were not significant but showed the tendency of group G2 having the intermediate position between G1 and G3, when judging by the VH:CrD value.
+
+## 5. Two-way ANCOVA (figure 4D)
+
+To assess the interaction between treatment groups and HLA-DQ genetic backgrounds on Epithelial response to IFN-γ GSZ at PGC, a two-way ANCOVA was conducted using these values at PGC as the dependent variable, HLA-DQ genetic background (G1, G2, and G3 genotype groups) and treatment (placebo or drug) as independent variables, and baseline Epithelial response to IFN-γ GSZ (from GFD group) as a covariate. This analysis included 57 patients, with one subject from the placebo group excluded due to unidentified allele type. The study formulated two null hypotheses for the two-way ANCOVA analysis: 1) no Epithelial response to IFN-γ GSZ difference at PCG exists between treatment groups (placebo and drug), while accounting for Epithelial response to IFN-γ GSZ at GFD, and 2) no Epithelial response to IFN-γ GSZ differences at PCG exist across HLA-DQ genetic backgrounds (G1, G2, and G3 genotype groups), controlling for Epithelial response to IFN-γ GSZ at GFD.
+
+### 5.1 Summary statistics
+
+```{r 5.1, echo=F, message=FALSE, warning=FALSE}
+sumstat <- metadata %>%
+  group_by(treatment, `HLA_Genotype_Group`, timepoint) %>%
+  get_summary_stats(`epithelial_IFNg_responce`, type = "mean_sd")
+sumstat %>% 
+  mutate_if(is.numeric, round, 2)
+#datatable(sumstat,colnames = c('Treatment','Timepoint', 'Genotype group', 'Variable', 'N','mean', "sd"),
+#  caption = 'Table 3: Summary of changes in VH:CrD values from baseline GFD according to HLA-DQ2/HLA-DQ8 genotypes.')
+
+```
+
+### 5.2 Assumptions check
+
+#### 5.2.1 Normality assumption
+
+```{r 5.2.1, echo=F, message=FALSE, warning=FALSE}
+metadata <- metadata[metadata$`HLA_Genotype_Group` != "Not identified",]
+#1.The dependent variable must be a continuous quantitative variable and have a normal distribution
+#Create the histogram plot
+phist <- gghistogram(
+  metadata[metadata$timepoint == "PGC",], x = "epithelial_IFNg_responce", 
+  add = "mean", rug = TRUE,
+  fill = "label2", palette = c("#6500ff","#ff6500"),facet.by  = c("treatment")
+) +mytheme +xlab("VH:CrD")
+
+pdensity <- ggdensity(
+  metadata[metadata$timepoint == "PGC",], x = "epithelial_IFNg_responce",  
+  color= "label2", palette = c("#6500ff","#ff6500"),facet.by  = c( "treatment"),
+  alpha = 0
+) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), position = "right")  +
+  theme_half_open(11, rel_small = 1) +
+  rremove("x.axis")+
+  rremove("xlab") +
+  rremove("x.text") +
+  rremove("x.ticks") +
+  rremove("legend") + theme(axis.title.y = element_text(size=7, color = "black"),axis.text.y= element_text(size=6, color = "black"))
+
+aligned_plots <- align_plots(phist, pdensity, align="hv", axis="tblr")
+hist <- ggdraw(aligned_plots[[1]]) + draw_plot(aligned_plots[[2]])
+hist
+```
+
+```{r 5.2.1 QQplot2, echo=F, message=FALSE, warning=FALSE}
+#QQplot
+qqpl <- ggqqplot(metadata[metadata$timepoint == "PGC",], x = "epithelial_IFNg_responce",
+                 color = "label2", palette = c("#6500ff","#ff6500")) + mytheme
+qqpl
+```
+
+From the plot above, as all the points fall approximately along the reference line, we can assume normality.
+
+#### 5.2.2 Linear relationship between the dependent variable and covariate.
+
+```{r 5.2.2, echo=F, message=FALSE, warning=FALSE}
+metadata_wide <- reshape2::dcast(as.data.frame(metadata[,c("treatment","HLA_Genotype_Group","epithelial_IFNg_responce","timepoint", "newID")]), newID + HLA_Genotype_Group +treatment ~ timepoint, value.var = "epithelial_IFNg_responce")
+
+plot1 <- ggscatter(metadata_wide, x = "GFD", y = "PGC",
+                   facet.by  = c("HLA_Genotype_Group", "treatment"), 
+                   short.panel.labs = FALSE, add = "reg.line",   conf.int = T) + mytheme
+#stat_smooth(method = "loess", span = 0.9)
+plot1
+
+```
+
+here was a linear relationship between the covariate (Epithelial response to IFN-γ GSZ at GFD) and the outcome variable (Epithelial response to IFN-γ GSZ at PGC) for each Genotype group, as assessed by visual inspection of a scatter plot.
+
+#### 5.2.3 Homogeneity of regression slopes.
+
+```{r 5.2.3, echo=F, message=FALSE, warning=FALSE}
+#3. Homogeneity of regression slopes
+df <- metadata_wide %>%
+  anova_test(
+    PGC ~  GFD + treatment + HLA_Genotype_Group + 
+      treatment*HLA_Genotype_Group + GFD*treatment +
+      GFD*HLA_Genotype_Group + GFD*HLA_Genotype_Group*treatment
+  )
+#myt <- ttheme_default(base_size = 6, base_colour = "black", base_family = "",parse = T)
+#tb <- tableGrob(df, rows = NULL,theme=myt)
+#as.ggplot(tb)
+df
+```
+
+There was homogeneity of regression slopes as the interaction terms, between the covariate "GFD" (Epithelial response to IFN-γ GSZ at GFD) and grouping variables (treatment and Genotype group), was not statistically significant.
+
+#### 5.2.4 Normality of residuals.
+
+```{r 5.2.4, echo=F, message=FALSE, warning=FALSE}
+#4. Normality of residuals
+# Fit the model, the covariate goes first
+model <- lm(PGC ~  GFD + treatment*HLA_Genotype_Group, data = metadata_wide)
+# Inspect the model diagnostic metrics
+model.metrics <- augment(model) %>%
+  select(-.hat, -.sigma, -.fitted) # Remove details
+#head(model.metrics, 5)
+# Assess normality of residuals using shapiro wilk test
+#shapiro_test(model.metrics$.resid)
+qqpl2 <- ggqqplot(model.metrics, x = ".resid") + 
+  annotate("text", x = -1, y = 1, label = "model formula: PGC ~ GFD + treatment * HLA_Genotype_Group", color = "black", parse = F)+ 
+  annotate("text", x = -1, y = 0.7, label = paste0("Shapiro Wilk test p-value: ", round(shapiro_test(model.metrics$.resid)$p.value,2)), color = "black", parse = F)+ 
+  mytheme 
+qqpl2
+```
+
+The Shapiro Wilk test was not significant `r paste0("P = ", round(shapiro_test(model.metrics$.resid)$p.value,2))`, so we can assume normality of residuals
+
+#### 5.2.5 Homogeneity of variances
+
+```{r 5.2.5, echo=F, message=FALSE, warning=FALSE}
+lt <- levene_test(.resid ~ treatment*HLA_Genotype_Group, data = model.metrics)
+lt
+
+```
+
+The Levene's test was not significant (`r paste0("P = ", round(lt$p,2))`), so we can assume homogeneity of the residual variances for all groups.
+
+### 5.3 Computation of two-way ANCOVA {#computation-of-two-way-ancova-1}
+
+```{r 5.3, echo=F, message=FALSE, warning=FALSE}
+res.aov <- metadata_wide %>% anova_test(PGC ~ GFD + treatment*HLA_Genotype_Group)
+get_anova_table(res.aov)
+#`r get_test_label(res.aov,  detailed = F)`
+```
+
+After adjustment for the Epithelial response to IFN-γ GSZ at GFD, there was no statistically significant interaction between treatment and the HLA-DQ genotype group on the IFN-γ responce `r paste0("F(", res.aov$DFn[4],",", res.aov$DFd[4], ") = ", round(res.aov$F[4],1), ", P = ", res.aov$p[4])`.
+
+### 5.4 Post-hoc tests
+
+#### 5.4.2. Pairwise comparisons
+
+```{r 5.4.2, echo=F, message=FALSE, warning=FALSE}
+pwc1 <- metadata_wide %>% 
+  group_by(HLA_Genotype_Group) %>%
+  emmeans_test(  #Performs pairwise comparisons between groups using the estimated marginal means
+    PGC ~ treatment, covariate = GFD,
+    p.adjust.method = "none"
+  )
+#pwc1 %>% filter(p.adj < 0.05)
+pwc1
+```
+
+There was a statistically significant difference between the adjusted for GFD Epithelial response to IFN-γ GSZ at PGC mean of drug and placebo group for G2 (`r paste0("P = ", round(pwc1[pwc1$HLA_Genotype_Group == "G2",]$p,3))`) and G3 genotype groups (`r paste0("P = ", round(pwc1[pwc1$HLA_Genotype_Group == "G3",]$p,4))`).
+
+#### 5.4.3. Pairwise comparisons plot {#pairwise-comparisons-plot-2}
+
+```{r 5.4.3, echo=F, message=FALSE, warning=FALSE}
+# Line plot
+i = "IFNg geneset GSZ"
+lp <- ggscatter(#ggline(
+  get_emmeans(pwc1), x = "HLA_Genotype_Group", y = "emmean", 
+  color = "treatment", palette = c("#6500ff","#ff6500")) +
+  geom_errorbar(
+    aes(ymin = conf.low, ymax = conf.high, color = treatment), 
+    width = 0.05
+  )+
+  xlab("HLA-DQ genotype group") +
+  ylab(paste(i, "at PGC \n estimated marginal means", sep=" "))+
+  theme(legend.position="top",
+        legend.title=element_blank())+ mytheme
+
+#lp
+
+# Comparisons between treatment group at each exercise level
+pwc1 <- pwc1 %>% rstatix::add_xy_position(x = "HLA_Genotype_Group", fun="mean_sd")
+#pwc1$y.position <- 2*seq(from=1, to=1.3, length.out=nrow(pwc1))
+#pwc1.filtered <- pwc1 %>% filter(p.adj < 0.05)
+
+#library(numform)
+pwc1 %>% 
+  mutate(p_new = ifelse(p.adj > 0.01, c(paste("italic('P')~`=", f_num(p.adj,2), "`")), p.adj))%>% 
+  mutate(p_new = ifelse(p.adj < 0.01, c(paste("italic('P')~`=", f_num(p.adj,3), "`")), p_new)) %>%
+  mutate(p_new = ifelse(p.adj < 0.001, c(paste("italic('P')~`", "<.001", "`")),p_new))->pwc1
+
+
+C <- lp + 
+  geom_signif(data=pwc1,
+              aes(xmin=xmin, xmax=xmax, annotations=p_new, y_position=y.position),
+              textsize = 6/.pt, 
+              manual=TRUE, 
+              parse=T, size=0.3, tip_length = 0) +
+  labs(
+    subtitle = get_test_label(res.aov,  detailed = TRUE),
+    caption = get_pwc_label(pwc1)
+ )
+C 
+```
+
+A two-way ANCOVA plot, examining the effects of treatment and HLA-DQ genetic background on post-gluten challenge epithelial-IFN-γ-GSZ-Score. Anova, F (2,49) = 0.07, p = .93.
+
+## 6. One-way ANCOVA (figure S4A)
+
+For the one-way ANCOVA, only patients in the *** drug group *** (n = 34) were selected. The null hypothesis for this analysis was that there is no significant effect of HLA-DQ genetic background (represented by HLA-DQ genotype groups) on VH within the PGCd group, while adjusting for VH at GFDd. The one-way ANCOVA regression model included VH at PGCd as the dependent variable, VH at GFDd as a covariate, and HLA-DQ genotype group (G1, G2, G3) as independent variables.
+
+### 6.1 Summary statistics
+
+
+```{r 6.1, echo=F, message=FALSE, warning=FALSE}
+sumstat <- metadata %>% filter(treatment == "drug") %>% 
+  group_by(HLA_Genotype_Group, timepoint) %>%
+  get_summary_stats(`VH`, type = "mean_sd")
+sumstat %>% 
+  mutate_if(is.numeric, round, 2)
+#datatable(sumstat,colnames = c('Treatment','Timepoint', 'Genotype group', 'Variable', 'N','mean', "sd"),
+#  caption = 'Table 3: Summary of changes in VH:CrD values from baseline GFD according to HLA-DQ2/HLA-DQ8 genotypes.')
+
+```
+
+### 6.2 Assumptions check
+
+#### 6.2.1 Normality assumption
+
+```{r 6.2.1, echo=F, message=FALSE, warning=FALSE}
+metadata_wide <- reshape2::dcast(as.data.frame(metadata[,c("treatment","HLA_Genotype_Group","VH","timepoint", "newID")]), newID + HLA_Genotype_Group +treatment ~ timepoint, value.var = "VH")
+
+metadata_wide1 <- metadata_wide[metadata_wide$HLA_Genotype_Group != "Not identified" & metadata_wide$treatment == "drug", ]
+
+#1.The dependent variable must be a continuous quantitative variable and have a normal distribution
+#Create the histogram plot
+phist <- gghistogram(
+  metadata[metadata$timepoint == "PGC" & metadata$treatment == "drug",], x = "VH", 
+  add = "mean", rug = TRUE,
+  fill = "label2", palette = c("#6500ff")
+) +mytheme +xlab("VH")
+
+pdensity <- ggdensity(
+  metadata[metadata$timepoint == "PGC" & metadata$treatment == "drug",], x = "VH", 
+  color= "label2", palette = c("#6500ff"),
+  alpha = 0
+) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), position = "right")  +
+  theme_half_open(11, rel_small = 1) +
+  rremove("x.axis")+
+  rremove("xlab") +
+  rremove("x.text") +
+  rremove("x.ticks") +
+  rremove("legend") + theme(axis.title.y = element_text(size=7, color = "black"),axis.text.y= element_text(size=6, color = "black"))
+
+aligned_plots <- align_plots(phist, pdensity, align="hv", axis="tblr")
+hist <- ggdraw(aligned_plots[[1]]) + draw_plot(aligned_plots[[2]])
+hist
+
+```
+
+```{r 6.2.1 QQplot3, echo=F, message=FALSE, warning=FALSE}
+#QQplot
+qqpl <- ggqqplot( metadata[metadata$timepoint == "PGC" & metadata$treatment == "drug",], x = "VH",
+                 color = "label2", palette = c("#6500ff")) + mytheme
+qqpl
+```
+
+From the plot above, as all the points fall approximately along the reference line, we can assume normality.
+
+#### 6.2.2 Linear relationship between the dependent variable and covariate.
+
+```{r 6.2.2, echo=F, message=FALSE, warning=FALSE}
+plot1 <- ggscatter(metadata_wide1, x = "GFD", y = "PGC",
+                   facet.by  = c("HLA_Genotype_Group"), 
+                   short.panel.labs = FALSE, add = "reg.line",   conf.int = T) + mytheme
+#stat_smooth(method = "loess", span = 0.9)
+plot1
+
+```
+
+There was a linear relationship between the covariate (VH at GFD) and the outcome variable (VH at PGC) for each Genotype group, as assessed by visual inspection of a scatter plot.
+
+#### 6.2.3 Homogeneity of regression slopes.
+
+```{r 6.3.2, echo=F, message=FALSE, warning=FALSE}
+#3. Homogeneity of regression slopes
+df <- metadata_wide1 %>%
+  anova_test(
+    PGC ~  GFD + HLA_Genotype_Group + 
+          GFD*HLA_Genotype_Group 
+  )
+
+df
+```
+
+There was homogeneity of regression slopes as the interaction terms, between the covariate "GFD" (VH at GFD) and grouping variable Genotype group, was not statistically significant, `r paste0("P = ", df$p[3])`.
+
+#### 6.2.4 Normality of residuals.
+
+```{r 6.2.4, echo=F, message=FALSE, warning=FALSE}
+#4. Normality of residuals
+# Fit the model, the covariate goes first
+model <- lm(PGC ~  GFD + HLA_Genotype_Group, data = metadata_wide1)
+# Inspect the model diagnostic metrics
+model.metrics <- augment(model) %>%
+  select(-.hat, -.sigma, -.fitted) # Remove details
+#head(model.metrics, 5)
+# Assess normality of residuals using shapiro wilk test
+#shapiro_test(model.metrics$.resid)
+qqpl2 <- ggqqplot(model.metrics, x = ".resid") + 
+  annotate("text", x = -1, y = 50, label = "model formula: PGC ~  GFD + HLA_Genotype_Group", color = "black", parse = F)+ 
+  annotate("text", x = -1, y = 45, label = paste0("Shapiro Wilk test p-value: ", round(shapiro_test(model.metrics$.resid)$p.value,2)), color = "black", parse = F)+ 
+  mytheme 
+qqpl2
+```
+
+The Shapiro Wilk test was not significant (`r paste0("P = ", round(shapiro_test(model.metrics$.resid)$p.value,2))`), so we can assume normality of residuals
+
+#### 6.2.5 Homogeneity of variances
+
+```{r 6.2.5, echo=F, message=FALSE, warning=FALSE}
+lt <- levene_test(.resid ~ HLA_Genotype_Group, data = model.metrics)
+lt
+```
+
+The Levene's test was not significant (`r paste0("P = ", round(lt$p,2))`), so we can assume homogeneity of the residual variances for all groups.
+
+### 6.3 Computation of one-way ANCOVA
+
+```{r 6.3, echo=F, message=FALSE, warning=FALSE}
+res.aov2 <- metadata_wide1 %>% anova_test(PGC ~ GFD+HLA_Genotype_Group)
+get_anova_table(res.aov2)
+#`r get_test_label(res.aov2,  detailed = F)`
+```
+
+After adjustment for the VH at GFD, there was statistically significant difference in VH at PGC score between the HLA-DQ genotype groups, `r paste0("F(", res.aov2$DFn[2],",", res.aov2$DFd[2], ") = ", round(res.aov2$F[2],1), ", P = ", res.aov2$p[2])`.
+
+### 6.4 Post-hoc tests
+
+#### 6.4.1. Pairwise comparisons
+
+```{r 6.4.1, echo=F, message=FALSE, warning=FALSE}
+# Pairwise comparisons
+pwc2 <- metadata_wide1 %>% 
+  emmeans_test(  #Performs pairwise comparisons between groups using the estimated marginal means
+    PGC ~ HLA_Genotype_Group, covariate = GFD,
+    p.adjust.method = "bonferroni", detailed = F
+  )
+#pwc2 %>% filter(p.adj < 0.05)
+pwc2
+```
+
+#### 6.4.2. Pairwise comparisons plot {#pairwise-comparisons-plot-3}
+
+```{r 6.4.2, echo=F, message=FALSE, warning=FALSE}
+gg <- ggplot(metadata_wide1, aes(x = GFD,  y = PGC,color = HLA_Genotype_Group)) +
+  geom_point(aes(color=HLA_Genotype_Group), size=0.5) +
+  geom_smooth(method = "lm",  mapping = aes(y = predict(lm(PGC ~ GFD + HLA_Genotype_Group,data = metadata_wide1), metadata_wide1)), linewidth=0.5) +
+  scale_color_manual(values = palette3) +
+  ylab("VH in PGCd group") +
+  xlab("VH in GFDd group") +  mytheme +
+  theme(legend.position = "right") +
+  guides(color=guide_legend(override.aes=list(fill=NA))) #removes legend grey background
+#gg
+
+# Pairwise comparisons
+pwc2 <- metadata_wide1 %>% 
+  emmeans_test(  #Performs pairwise comparisons between groups using the estimated marginal means
+    PGC ~ HLA_Genotype_Group, covariate = GFD,
+    p.adjust.method = "bonferroni", detailed = T
+  )
+#pwc2 %>% filter(p.adj < 0.05)
+pwc2 %>% select("term", ".y.","group1","group2", "estimate","conf.low","conf.high","p","p.adj")
+
+pwc2 %>% 
+  mutate(p_new = ifelse(p.adj > 0.01, c(paste("italic('P')~`=", f_num(p.adj,2), "`")), p.adj))%>% 
+  mutate(p_new = ifelse(p.adj < 0.01, c(paste("italic('P')~`=", f_num(p.adj,3), "`")), p_new)) %>%
+  mutate(p_new = ifelse(p.adj < 0.001, c(paste("italic('P')~`", "<.001", "`")),p_new))->pwc2
+pwc2$contrast <- paste0(pwc2$group1, " - ", pwc2$group2)
+
+
+gg_effect <- ggplot(data = pwc2, aes(y = contrast,estimate)) +
+                    geom_errorbar(aes(xmin = conf.low, xmax = conf.high),width = 0, color = "black") + # confidence level of effect
+                    geom_point(size = 0.5) + # estimate of effect
+  geom_vline(xintercept = 0, linetype = 2) + # draw a line at effect = 0
+   annotate(geom = "text", label = pwc2$p_new, size = 5/.pt, manual=TRUE, parse=T, y = 1:3, x = round(max(pwc2$conf.high)*4,2)) + # p-value. The y coordinates are set by eye
+  ylab("Contrast") +
+  coord_cartesian(xlim = c(round(min(pwc2$conf.low)*1.05,2),round(max(pwc2$conf.high)*5,2))) +
+  scale_x_continuous(position="top") +
+  theme_pubr() + mytheme + theme(axis.title.y = element_blank())
+
+#gg_effect
+
+Cp <- plot_grid(gg_effect,
+                gg ,
+                nrow=2,
+                align = "v",
+                axis = "rl",
+                rel_heights = c(0.4, 1)
+)
+Cp
+```
+
+The estimated difference in the VH for drug patients belonging to G3 genotypes versus G1 genotypes is `r paste0( round( pwc2$estimate[2], 2), "(95% CI ", round( pwc2$conf.low[2], 2), " to ",round( pwc2$conf.high[2], 2), "), P.adj = ", round(pwc2$p.adj[2], 2))`.
+
+The estimated difference in the VH for drug patients belonging to G2 genotypes versus G1 genotypes is `r paste0( round( pwc2$estimate[1], 2), "(95% CI ", round( pwc2$conf.low[1], 2), " to ",round( pwc2$conf.high[1], 2), "), P.adj = ", round(pwc2$p.adj[1], 2))`.
+
+Other estimated difference (G3-G2) was not significant. 
+
+
+## 7. One-way ANCOVA (figure S4B)
+
+For the one-way ANCOVA, only patients in the drug group (n = 34) were selected. The null hypothesis for this analysis was that there is no significant effect of HLA-DQ genetic background (represented by HLA-DQ genotype groups) on CrD within the PGCd group, while adjusting for CrD at GFDd. The one-way ANCOVA regression model included CrD at PGCd as the dependent variable, CrD at GFDd as a covariate, and HLA-DQ genotype group (G1, G2, G3) as independent variables.
+
+### 7.1 Summary statistics
+
+```{r 7.1, echo=F, message=FALSE, warning=FALSE}
+sumstat <- metadata %>% filter(treatment == "drug") %>% 
+  group_by(HLA_Genotype_Group, timepoint) %>%
+  get_summary_stats(`CrD`, type = "mean_sd")
+sumstat %>% 
+  mutate_if(is.numeric, round, 2)
+#datatable(sumstat,colnames = c('Treatment','Timepoint', 'Genotype group', 'Variable', 'N','mean', "sd"),
+#  caption = 'Table 3: Summary of changes in VH:CrD values from baseline GFD according to HLA-DQ2/HLA-DQ8 genotypes.')
+
+```
+
+### 7.2 Assumptions check
+
+#### 7.2.1 Normality assumption
+
+```{r 7.2.1, echo=F, message=FALSE, warning=FALSE}
+
+metadata_wide <- reshape2::dcast(as.data.frame(metadata[,c("treatment","HLA_Genotype_Group","CrD","timepoint", "newID")]), newID + HLA_Genotype_Group +treatment ~ timepoint, value.var = "CrD")
+
+metadata_wide1 <- metadata_wide[metadata_wide$HLA_Genotype_Group != "Not identified" & metadata_wide$treatment == "drug", ]
+
+#1.The dependent variable must be a continuous quantitative variable and have a normal distribution
+#Create the histogram plot
+phist <- gghistogram(
+  metadata[metadata$timepoint == "PGC" & metadata$treatment == "drug",], x = "CrD", 
+  add = "mean", rug = TRUE,
+  fill = "label2", palette = c("#6500ff")
+) +mytheme +xlab("CrD")
+
+pdensity <- ggdensity(
+  metadata[metadata$timepoint == "PGC" & metadata$treatment == "drug",], x = "CrD", 
+  color= "label2", palette = c("#6500ff"),
+  alpha = 0
+) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), position = "right")  +
+  theme_half_open(11, rel_small = 1) +
+  rremove("x.axis")+
+  rremove("xlab") +
+  rremove("x.text") +
+  rremove("x.ticks") +
+  rremove("legend") + theme(axis.title.y = element_text(size=7, color = "black"),axis.text.y= element_text(size=6, color = "black"))
+
+aligned_plots <- align_plots(phist, pdensity, align="hv", axis="tblr")
+hist <- ggdraw(aligned_plots[[1]]) + draw_plot(aligned_plots[[2]])
+hist
+
+```
+
+```{r 7.2.1 QQplot3, echo=F, message=FALSE, warning=FALSE}
+#QQplot
+qqpl <- ggqqplot( metadata[metadata$timepoint == "PGC" & metadata$treatment == "drug",], x = "CrD",
+                 color = "label2", palette = c("#6500ff")) + mytheme
+qqpl
+```
+
+From the plot above, as all the points fall approximately along the reference line, we can assume normality.
+
+#### 7.2.2 Linear relationship between the dependent variable and covariate.
+
+```{r 7.2.2, echo=F, message=FALSE, warning=FALSE}
+plot1 <- ggscatter(metadata_wide1, x = "GFD", y = "PGC",
+                   facet.by  = c("HLA_Genotype_Group"), 
+                   short.panel.labs = FALSE, add = "reg.line",   conf.int = T) + mytheme
+#stat_smooth(method = "loess", span = 0.9)
+plot1
+
+```
+
+There was a linear relationship between the covariate (CrD at GFD) and the outcome variable (CrD at PGC) for each Genotype group, as assessed by visual inspection of a scatter plot.
+
+#### 7.2.3 Homogeneity of regression slopes.
+
+```{r 7.3.2, echo=F, message=FALSE, warning=FALSE}
+#3. Homogeneity of regression slopes
+df <- metadata_wide1 %>%
+  anova_test(
+    PGC ~  GFD + HLA_Genotype_Group + 
+          GFD*HLA_Genotype_Group 
+  )
+
+df
+```
+
+Homogeneity of regression slopes assumption is violated as the interaction terms, between the covariate "GFD" (CrD at GFD) and grouping variable Genotype group, was statistically significant, p = 0.043.
+
+#### 7.2.4 Normality of residuals.
+
+```{r 7.2.4, echo=F, message=FALSE, warning=FALSE}
+#4. Normality of residuals
+# Fit the model, the covariate goes first
+model <- lm(PGC ~  GFD + HLA_Genotype_Group, data = metadata_wide1)
+# Inspect the model diagnostic metrics
+model.metrics <- augment(model) %>%
+  select(-.hat, -.sigma, -.fitted) # Remove details
+#head(model.metrics, 5)
+# Assess normality of residuals using shapiro wilk test
+#shapiro_test(model.metrics$.resid)
+qqpl2 <- ggqqplot(model.metrics, x = ".resid") + 
+  annotate("text", x = -1, y = 50, label = "model formula: PGC ~  GFD + HLA_Genotype_Group", color = "black", parse = F)+ 
+  annotate("text", x = -1, y = 45, label = paste0("Shapiro Wilk test p-value: ", round(shapiro_test(model.metrics$.resid)$p.value,2)), color = "black", parse = F)+ 
+  mytheme 
+qqpl2
+```
+
+The Shapiro Wilk test was not significant (p = 0.93), so we can assume normality of residuals
+
+#### 7.2.5 Homogeneity of variances
+
+```{r 7.2.5, echo=F, message=FALSE, warning=FALSE}
+levene_test(.resid ~ HLA_Genotype_Group, data = model.metrics)
+```
+
+The Levene's test was not significant (p = 0.27), so we can assume homogeneity of the residual variances for all groups.
+
+### 7.3 Computation of one-way ANCOVA
+
+```{r 7.3, echo=F, message=FALSE, warning=FALSE}
+res.aov2 <- metadata_wide1 %>% anova_test(PGC ~ GFD+HLA_Genotype_Group)
+get_anova_table(res.aov2)
+
+
+```
+
+After adjustment for CrD at GFD, there was a statistically significant difference in CrD at PGC between the Genotype groups, F(2, 30) = 3.597, p = 0.04.
+
+### 7.4 Post-hoc tests
+
+#### 7.4.1. Pairwise comparisons
+
+```{r 7.4.1, echo=F, message=FALSE, warning=FALSE}
+# Pairwise comparisons
+pwc2 <- metadata_wide1 %>% 
+  emmeans_test(  #Performs pairwise comparisons between groups using the estimated marginal means
+    PGC ~ HLA_Genotype_Group, covariate = GFD,
+    p.adjust.method = "bonferroni", detailed = F
+  )
+#pwc2 %>% filter(p.adj < 0.05)
+pwc2
+```
+
+#### 7.4.2. Pairwise comparisons plot {#pairwise-comparisons-plot-4}
+
+```{r 7.4.2, echo=F, message=FALSE, warning=FALSE}
+gg <- ggplot(metadata_wide1, aes(x = GFD,  y = PGC,color = HLA_Genotype_Group)) +
+  geom_point(aes(color=HLA_Genotype_Group), size=0.5) +
+  geom_smooth(method = "lm",  mapping = aes(y = predict(lm(PGC ~ GFD + HLA_Genotype_Group,data = metadata_wide1), metadata_wide1)), linewidth=0.5) +
+  scale_color_manual(values = palette3) +
+  ylab("CrD in PGCd group") +
+  xlab("CrD in GFDd group") +  mytheme +
+  theme(legend.position = "right") +
+  guides(color=guide_legend(override.aes=list(fill=NA))) #removes legend grey background
+#gg
+
+# Pairwise comparisons
+pwc2 <- metadata_wide1 %>% 
+  emmeans_test(  #Performs pairwise comparisons between groups using the estimated marginal means
+    PGC ~ HLA_Genotype_Group, covariate = GFD,
+    p.adjust.method = "bonferroni", detailed = T
+  )
+#pwc2 %>% filter(p.adj < 0.05)
+pwc2 %>% select("term", ".y.","group1","group2", "estimate","conf.low","conf.high","p","p.adj")
+
+
+pwc2 %>% 
+  mutate(p_new = ifelse(p.adj > 0.01, c(paste("italic('P')~`=", f_num(p.adj,2), "`")), p.adj))%>% 
+  mutate(p_new = ifelse(p.adj < 0.01, c(paste("italic('P')~`=", f_num(p.adj,3), "`")), p_new)) %>%
+  mutate(p_new = ifelse(p.adj < 0.001, c(paste("italic('P')~`", "<.001", "`")),p_new))->pwc2
+pwc2$contrast <- paste0(pwc2$group1, " - ", pwc2$group2)
+
+
+gg_effect <- ggplot(data = pwc2, aes(y = contrast,estimate)) +
+                    geom_errorbar(aes(xmin = conf.low, xmax = conf.high),width = 0, color = "black") + # confidence level of effect
+                    geom_point(size = 0.5) + # estimate of effect
+  geom_vline(xintercept = 0, linetype = 2) + # draw a line at effect = 0
+   annotate(geom = "text", label = pwc2$p_new, size = 5/.pt, manual=TRUE, parse=T, y = 1:3, x = round(max(pwc2$conf.high)*4,2)) + # p-value. The y coordinates are set by eye
+  ylab("Contrast") +
+  coord_cartesian(xlim = c(round(min(pwc2$conf.low)*1.05,2),round(max(pwc2$conf.high)*5,2))) +
+  scale_x_continuous(position="top") +
+  theme_pubr() + mytheme + theme(axis.title.y = element_blank())
+
+#gg_effect
+
+Cp <- plot_grid(gg_effect,
+                gg ,
+                nrow=2,
+                align = "v",
+                axis = "rl",
+                rel_heights = c(0.4, 1)
+)
+Cp
+```
+
+The estimated difference in the CrD for drug patients belonging to G2 genotypes versus G3 genotypes is `r paste0( round( pwc2$estimate[3], 1), " (95% CI ", round( pwc2$conf.low[3], 2), " to ",round( pwc2$conf.high[3], 2), "), P.adj = ", round(pwc2$p.adj[3], 2))`.
+
+Other estimated differences (G1-G2 and G1-G3) were not significant. 
+
+
+## 8. Session information.
+
+```{r 8, echo=F, message=FALSE, warning=FALSE}
+sessionInfo(package = NULL)
+```
